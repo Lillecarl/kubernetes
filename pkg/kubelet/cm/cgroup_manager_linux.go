@@ -73,6 +73,17 @@ func cgroupNsdelegateEnabled(mountInfoPath string) (bool, error) {
 	return false, fmt.Errorf("no mount at %s in %s", cmutil.CgroupRoot, mountInfoPath)
 }
 
+// CgroupNsdelegate reports whether the cgroup v2 hierarchy is currently
+// mounted with nsdelegate, reading the mount table on every call.
+//
+// NodeConfig.CgroupNsdelegate is a snapshot taken once at kubelet startup,
+// but a remount can drop the option mid-life, leaving the node's declared
+// CgroupOptions stale while the scheduler keeps placing. Callers deciding
+// about a single container read the world instead of the snapshot.
+func CgroupNsdelegate() (bool, error) {
+	return cgroupNsdelegateEnabled(procMountInfoPath)
+}
+
 var RootCgroupName = CgroupName([]string{})
 
 // NewCgroupName composes a new cgroup name.

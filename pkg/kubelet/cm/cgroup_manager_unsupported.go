@@ -29,6 +29,13 @@ type unsupportedCgroupManager struct{}
 
 var errNotSupported = errors.New("Cgroup Manager is not supported in this build")
 
+// CgroupNsdelegate reports whether the cgroup v2 hierarchy is mounted with
+// nsdelegate. Non-Linux builds cannot host writable cgroups, so this always
+// answers false and the caller denies with its standard message.
+func CgroupNsdelegate() (bool, error) {
+	return false, nil
+}
+
 // Make sure that unsupportedCgroupManager implements the CgroupManager interface
 var _ CgroupManager = &unsupportedCgroupManager{}
 

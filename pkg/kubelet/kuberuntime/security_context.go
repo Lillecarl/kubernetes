@@ -24,6 +24,7 @@ import (
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	runtimeapi "k8s.io/cri-api/pkg/apis/runtime/v1"
 	"k8s.io/kubernetes/pkg/features"
+	"k8s.io/kubernetes/pkg/kubelet/cm"
 	runtimeutil "k8s.io/kubernetes/pkg/kubelet/kuberuntime/util"
 	"k8s.io/kubernetes/pkg/securitycontext"
 )
@@ -103,7 +104,12 @@ func (m *kubeGenericRuntimeManager) determineEffectiveSecurityContext(ctx contex
 			if nodeConfig.CgroupVersion != 2 {
 				return nil, fmt.Errorf("writable cgroups require cgroup v2")
 			}
-			if !nodeConfig.CgroupNsdelegate {
+			// Re-read nsdelegate live: NodeConfig.CgroupNsdelegate is a
+			// snapshot from kubelet startup, but a remount can drop the
+			// option mid-life, leaving the node's declared CgroupOptions
+			// stale while the scheduler keeps placing. The runtimes check
+			// at creation; so must we.
+			if nsdelegate, err := cm.CgroupNsdelegate(); err != nil || !nsdelegate {
 				return nil, fmt.Errorf("writable cgroups require the cgroup filesystem to be mounted with nsdelegate")
 			}
 			if !nodeConfig.CgroupsPerQOS {
